@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-title" content="KERN">
 <title>KERN</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Cinzel:wght@400;700;900&display=swap" rel="stylesheet">
 <style>
 :root{
   --bg:#020207;--surface:#080810;--surface2:#0e0e1a;
@@ -67,8 +67,8 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:1
 .top-bar-row{display:flex;justify-content:space-between;align-items:flex-start}
 .greeting-label{font-size:9px;color:var(--text-dim);letter-spacing:2px;text-transform:uppercase;margin-bottom:4px}
 .greeting-label::before{content:'// '}
-.greeting-name{font-size:28px;font-weight:700;letter-spacing:2px;color:var(--accent);text-transform:uppercase;line-height:1}
-.greeting-name::after{content:'_';animation:blink 1s step-end infinite;color:var(--accent)}
+.greeting-name{font-size:26px;font-weight:700;letter-spacing:3px;color:var(--accent);font-family:'Cinzel',serif;text-transform:capitalize;line-height:1.1}
+.greeting-name::after{content:'';animation:none}
 .streak-badge{background:transparent;border:1px solid var(--border);padding:6px 10px;display:flex;align-items:center;gap:5px;font-size:11px;font-weight:700;color:var(--text-dim);letter-spacing:1px}
 .streak-badge .fire{font-size:11px}
 .weather-strip{display:flex;align-items:flex-start;margin-top:12px;border-top:1px solid var(--border);padding-top:10px;flex-wrap:wrap;gap:0}
@@ -944,7 +944,7 @@ function startApp(){
 }
 function initApp(){
   document.getElementById('bottom-nav').style.display='flex';
-  document.getElementById('greeting-name').textContent=state.userName.toUpperCase();
+  document.getElementById('greeting-name').textContent='Akosaemeka';
   const h=new Date().getHours();
   const greet=h<12?'MORNING':h<17?'AFTERNOON':'EVENING';
   document.getElementById('greeting-label').textContent=greet;
@@ -2208,7 +2208,7 @@ showScreen=function(name){
 // Init on load
 document.getElementById('bottom-nav').style.display='none';
 load();
-if(!state.userName) state.userName='Akosa';
+if(!state.userName) state.userName='Akosaemeka';
 save();
 initApp();
 if(state.reminderEnabled)scheduleReminders();
