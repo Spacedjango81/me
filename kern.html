@@ -938,11 +938,15 @@ function todayKey(){return new Date().toISOString().split('T')[0]}
 function dateKey(d){return d.toISOString().split('T')[0]}
 function formatDate(d){return d.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'})}
 function startApp(){
-  const name=document.getElementById('user-name-input').value.trim();
+  let name=document.getElementById('user-name-input').value.trim();
+  if(!name) name=state.userName;
   if(!name){document.getElementById('user-name-input').focus();return}
-  state.userName=name;save();initApp();
+  state.userName=name;
+  state.lastLoginDate=new Date().toISOString().split('T')[0];
+  save();initApp();
 }
 function initApp(){
+  document.getElementById('screen-onboard').classList.remove('active');
   document.getElementById('bottom-nav').style.display='flex';
   document.getElementById('greeting-name').textContent='Akosaemeka';
   const h=new Date().getHours();
@@ -2205,12 +2209,22 @@ showScreen=function(name){
   _origShowScreen(name);
   if(name==='settings')renderSettings();
 };
-// Init on load
+// Init on load — show login screen every new day
 document.getElementById('bottom-nav').style.display='none';
 load();
-if(!state.userName) state.userName='Akosaemeka';
-save();
-initApp();
+const _todayKey=new Date().toISOString().split('T')[0];
+if(state.lastLoginDate===_todayKey && state.userName){
+  // Already logged in today — go straight to app
+  initApp();
+}else{
+  // New day (or first ever) — show the login screen
+  // Pre-fill name if known
+  if(state.userName){
+    document.getElementById('user-name-input').value=state.userName;
+    document.getElementById('user-name-input').placeholder=state.userName.toLowerCase()+'...';
+  }
+  document.getElementById('screen-onboard').classList.add('active');
+}
 if(state.reminderEnabled)scheduleReminders();
 if(state.portalEvents?.work?.length)schedulePortalNotifications('work');
 if(state.portalEvents?.bmet?.length)schedulePortalNotifications('bmet');
