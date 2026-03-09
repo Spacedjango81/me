@@ -1209,13 +1209,6 @@ function renderDailyArt(data){
       <div class="art-source">${item.source}${item.url?` · <a class="art-link" href="${item.url}" target="_blank">READ →</a>`:''}</div>
     </div>`).join('');
 }
-  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
-  document.getElementById('screen-'+name).classList.add('active');
-  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.toggle('active',b.dataset.screen===name));
-  if(name==='journal')renderJournal();
-  if(name==='pulse')initPulse();
-  if(name==='markets')initMarkets();
-}
 function buildDateRow(){
   const row=document.getElementById('date-row');row.innerHTML='';
   const today=new Date();
@@ -2203,12 +2196,15 @@ function resetApp(){
   localStorage.removeItem('kern_v1');
   location.reload();
 }
-// ── EXTEND showScreen ──────────────────────────────────────────────────────
-const _origShowScreen=showScreen;
-showScreen=function(name){
-  _origShowScreen(name);
+function showScreen(name){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('screen-'+name).classList.add('active');
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.toggle('active',b.dataset.screen===name));
+  if(name==='journal')renderJournal();
+  if(name==='pulse')initPulse();
+  if(name==='markets')initMarkets();
   if(name==='settings')renderSettings();
-};
+}
 // Init on load — show login screen every new day
 document.getElementById('bottom-nav').style.display='none';
 load();
