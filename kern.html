@@ -874,8 +874,9 @@ input[type=time]:focus{border-color:var(--accent)}
 
   <!-- LEGEND -->
   <div class="sched-legend">
-    <div class="legend-item"><div class="legend-dot" style="background:#38bdf8"></div><span>BMW / WORK</span></div>
-    <div class="legend-item"><div class="legend-dot" style="background:#fb923c"></div><span>BMet College</span></div>
+    <div class="legend-item"><div class="legend-dot" style="background:#38bdf8"></div><span>WORK</span></div>
+    <div class="legend-item"><div class="legend-dot" style="background:#fb923c"></div><span>BMet</span></div>
+    <div class="legend-item"><div class="legend-dot" style="background:#a78bfa"></div><span>SOCIAL</span></div>
     <div class="legend-item"><div class="legend-dot" style="background:#ff4444"></div><span>DEADLINE</span></div>
   </div>
 
@@ -1679,18 +1680,38 @@ async function handleLogCapture(e){
       const events=await extractLogEvents(base64.split(',')[1],currentLogCat);
       if(!state.portalEvents)state.portalEvents={};
       if(!state.portalEvents[currentLogCat])state.portalEvents[currentLogCat]=[];
-      // Merge — avoid duplicates by title+date
+      // Deduplicate — match on title + date + time (normalised lowercase)
+      let added=0;
       events.forEach(ev=>{
-        const exists=state.portalEvents[currentLogCat].some(x=>x.title===ev.title&&x.date===ev.date);
-        if(!exists)state.portalEvents[currentLogCat].push(ev);
+        const key=(ev.title||'').toLowerCase().trim()+'|'+(ev.date||'')+'|'+(ev.time||'');
+        const exists=state.portalEvents[currentLogCat].some(x=>{
+          const xkey=(x.title||'').toLowerCase().trim()+'|'+(x.date||'')+'|'+(x.time||'');
+          return xkey===key;
+        });
+        if(!exists){state.portalEvents[currentLogCat].push(ev);added++;}
       });
       save();
+      // Clear preview image immediately
+      preview.classList.remove('show');
+      preview.src='';
       scheduleAllEventNotifications();
       renderLogEvents();
-      showToast(`✓ ${events.length} event${events.length!==1?'s':''} added from screenshot`);
+      const skipped=events.length-added;
+      const msg=added>0
+        ?`✓ ${added} event${added!==1?'s':''} added${skipped>0?` · ${skipped} duplicate${skipped!==1?'s':''} skipped`:''} — tap SCHED to view`
+        :`All ${events.length} events already exist`;
+      showToast(msg);
+      const schedBtn=document.querySelector('.nav-btn[data-screen="sched"]');
+      if(schedBtn&&added>0){
+        schedBtn.style.color='var(--accent)';
+        setTimeout(()=>schedBtn.style.color='',2000);
+      }
     }catch(err){
       showToast('Could not read schedule — try a clearer screenshot');
       console.error(err);
+      // Clear preview on failure too
+      const preview=document.getElementById('log-preview');
+      if(preview){preview.classList.remove('show');preview.src='';}
     }
     proc.classList.remove('active');
   };
@@ -1972,7 +1993,23 @@ function calMove(dir){
 function getAllEvents(){
   const work=(state.portalEvents||{}).work||[];
   const bmet=(state.portalEvents||{}).bmet||[];
-  return [...work,...bmet];
+  const social=(state.portalEvents||{}).social||[];
+  return [...work,...bmet,...social];
+}
+
+function catColor(ev){
+  const cat=ev.cat||ev.portal||'work';
+  if(cat==='work')return'#38bdf8';
+  if(cat==='social')return'#a78bfa';
+  if(ev.type==='deadline')return'#ff4444';
+  return'#fb923c'; // bmet
+}
+function catLabel(ev){
+  const cat=ev.cat||ev.portal||'work';
+  if(cat==='work')return'WORK';
+  if(cat==='bmet')return'BMet';
+  if(cat==='social')return'SOCIAL';
+  return'WORK';
 }
 
 function renderCalendar(){
@@ -2008,8 +2045,7 @@ function renderCalendar(){
     const isSel=calSelectedDate===dateStr;
     const evs=evMap[dateStr]||[];
     const dots=evs.slice(0,4).map(ev=>{
-      const col=ev.portal==='work'?'#38bdf8':ev.type==='deadline'?'#ff4444':'#fb923c';
-      return `<div class="cal-dot" style="background:${col}"></div>`;
+      return `<div class="cal-dot" style="background:${catColor(ev)}"></div>`;
     }).join('');
     html+=`<div class="cal-cell${isToday?' today':''}${isSel?' selected':''}" onclick="calSelectDay('${dateStr}')">
       <div class="cal-day-num">${d}</div>
@@ -2050,8 +2086,8 @@ function renderDayEvents(dateStr){
     return;
   }
   const rows=evs.map(ev=>{
-    const col=ev.portal==='work'?'#38bdf8':ev.type==='deadline'?'#ff4444':'#fb923c';
-    const source=ev.portal==='work'?'BMW/WORK':'BMet';
+    const col=catColor(ev);
+    const source=catLabel(ev);
     const timeLabel=ev.time&&ev.time!=='23:59'?ev.time:'ALL DAY';
     return`<div class="cal-event-row">
       <div class="cal-event-bar" style="background:${col}"></div>
@@ -2072,7 +2108,7 @@ function schedulePortalNotifications(portal){
   if(Notification.permission!=='granted')return;
   const events=(state.portalEvents||{})[portal]||[];
   const now=new Date();
-  const label=portal==='bmet'?'🎓 BMet':'💼 Work';
+  const label=portal==='bmet'?'🎓 BMet':portal==='social'?'🟣 Social':'💼 Work';
   events.forEach(ev=>{
     const evDate=new Date(ev.date+'T'+(ev.time||'00:00'));
     if(evDate<now)return;
@@ -2710,6 +2746,7 @@ if(state.reminderEnabled)scheduleReminders();
 if(Notification.permission==='granted')scheduleAllEventNotifications();
 if(state.portalEvents?.work?.length)schedulePortalNotifications('work');
 if(state.portalEvents?.bmet?.length)schedulePortalNotifications('bmet');
+if(state.portalEvents?.social?.length)schedulePortalNotifications('social');
 document.getElementById('delete-modal').addEventListener('click',function(e){if(e.target===this)closeModal()});
 document.getElementById('user-name-input').addEventListener('keydown',e=>{if(e.key==='Enter')startApp()});
 window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();setTimeout(()=>showToast('Add to Home Screen for best experience!'),2000)});
