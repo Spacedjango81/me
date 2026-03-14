@@ -2929,7 +2929,7 @@ let _sw = null;
 async function registerSW(){
   if(!('serviceWorker' in navigator))return;
   try{
-    const reg = await navigator.serviceWorker.register('./sw.js?v=5', {scope:'./'});
+    const reg = await navigator.serviceWorker.register('./sw.js?v=6', {scope:'./'});
     await navigator.serviceWorker.ready;
     _sw = reg;
     // Detect when a new SW is waiting — means new version uploaded
