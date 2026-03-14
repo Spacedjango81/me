@@ -1026,6 +1026,16 @@ input[type=time]:focus{border-color:var(--accent)}
           </div>
         </div>
       </div>
+      <div class="settings-row" style="cursor:pointer" onclick="refreshApp()">
+        <div class="settings-row-left">
+          <div class="settings-row-icon">↻</div>
+          <div class="settings-row-info">
+            <div class="settings-row-label">Refresh app</div>
+            <div class="settings-row-sub">Pull latest updates without losing data</div>
+          </div>
+        </div>
+        <span style="color:var(--muted);font-size:18px">›</span>
+      </div>
       <div class="settings-row" style="cursor:pointer" onclick="resetApp()">
         <div class="settings-row-left">
           <div class="settings-row-icon">🗑️</div>
@@ -2833,6 +2843,17 @@ function toggleHabitReminder(id,el){
     });
   } else {
     state.habitReminders[id]=false;el.classList.remove('on');save();
+  }
+}
+function refreshApp(){
+  showToast('Refreshing...');
+  // Unregister SW cache then reload to get latest files
+  if('serviceWorker' in navigator){
+    navigator.serviceWorker.getRegistrations().then(regs=>{
+      Promise.all(regs.map(r=>r.update())).then(()=>location.reload(true));
+    });
+  } else {
+    location.reload(true);
   }
 }
 function resetApp(){
