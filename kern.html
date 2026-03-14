@@ -222,8 +222,30 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:1
 .freq-pill{background:transparent;border:1px solid var(--border);padding:7px 14px;font-size:10px;cursor:pointer;transition:all .15s;font-family:var(--font);color:var(--text-dim);text-transform:uppercase;letter-spacing:1px}
 .freq-pill.selected{background:var(--accent);border-color:var(--accent);color:#020207;font-weight:700}
 
-/* ── JOURNAL ── */
-#screen-journal{padding:48px 0 100px}
+/* ── LOG SCREEN ── */
+#screen-journal{padding:0 0 100px;overflow-y:auto}
+.log-cat-row{display:flex;gap:0;border-bottom:1px solid var(--border)}
+.log-cat-btn{flex:1;background:transparent;border:none;border-bottom:2px solid transparent;color:var(--muted);font-family:var(--font);font-size:9px;letter-spacing:1.5px;padding:11px 0;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;transition:all .2s;text-transform:uppercase}
+.log-cat-btn.active{color:var(--accent);border-bottom-color:var(--accent)}
+.log-cat-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.log-capture-zone{margin:16px 20px;border:1px solid var(--border);padding:16px;background:var(--surface)}
+.log-capture-row{display:flex;gap:10px;margin-bottom:12px}
+.log-capture-btn{flex:1;display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;border:1px solid var(--border);color:var(--text-dim);font-family:var(--font);font-size:10px;font-weight:700;letter-spacing:1.5px;cursor:pointer;transition:all .2s;text-transform:uppercase;background:transparent}
+.log-capture-btn.primary{border-color:var(--accent);color:var(--accent);background:var(--accent-dim)}
+.log-capture-btn:hover{border-color:var(--accent);color:var(--accent)}
+.log-capture-hint{font-size:9px;color:var(--muted);letter-spacing:1px;text-align:center;text-transform:uppercase}
+.log-event-card{padding:14px 20px;border-bottom:1px solid var(--border);display:flex;gap:12px;align-items:flex-start}
+.log-event-stripe{width:3px;border-radius:0;flex-shrink:0;align-self:stretch;min-height:40px}
+.log-event-body{flex:1;min-width:0}
+.log-event-title{font-size:12px;font-weight:700;color:var(--text);letter-spacing:.3px;margin-bottom:4px}
+.log-event-time{font-size:9px;color:var(--accent);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:3px}
+.log-event-meta{font-size:9px;color:var(--muted);letter-spacing:.5px}
+.log-event-actions{display:flex;gap:6px;margin-top:8px}
+.log-event-del{background:transparent;border:1px solid var(--border);color:var(--muted);font-family:var(--font);font-size:8px;padding:3px 8px;cursor:pointer;letter-spacing:1px;text-transform:uppercase;transition:all .15s}
+.log-event-del:hover{border-color:var(--danger);color:var(--danger)}
+.log-events-empty{padding:32px 20px;text-align:center;font-size:9px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;line-height:2}
+.log-section-head{font-size:8px;font-weight:700;letter-spacing:2px;color:var(--muted);text-transform:uppercase;padding:10px 20px 6px;border-bottom:1px solid var(--border)}
+.log-section-head::before{content:'// '}
 .journal-today{background:transparent;border-bottom:1px solid var(--border);padding:16px 20px 16px;margin-bottom:0}
 .journal-today-label{font-size:9px;color:var(--text-dim);text-transform:uppercase;letter-spacing:2px;margin-bottom:12px}
 .journal-today-label::before{content:'// LOG: '}
@@ -621,19 +643,70 @@ input[type=time]:focus{border-color:var(--accent)}
 </div>
 
 <div class="screen" id="screen-journal">
-  <div class="screen-title">JOURNAL_LOG</div>
-  <div class="journal-today">
-    <div class="journal-today-label">Today — <span id="journal-date"></span></div>
-    <textarea class="journal-textarea" id="journal-input" placeholder="How are you feeling? What went well today?..." rows="4"></textarea>
-    <div class="journal-actions">
-      <button class="mood-btn" data-mood="😊" onclick="selectMood(this)">😊</button>
-      <button class="mood-btn" data-mood="😐" onclick="selectMood(this)">😐</button>
-      <button class="mood-btn" data-mood="😔" onclick="selectMood(this)">😔</button>
-      <button class="mood-btn" data-mood="🔥" onclick="selectMood(this)">🔥</button>
-      <button class="save-journal-btn" onclick="saveJournal()">Save</button>
+  <div style="padding:48px 20px 0;border-bottom:1px solid var(--border);padding-bottom:14px">
+    <div class="screen-title" style="margin-bottom:12px">LOG</div>
+    <div class="sched-tabs">
+      <button class="sched-tab active" id="ltab-events" onclick="logTab('events')">EVENTS</button>
+      <button class="sched-tab" id="ltab-journal" onclick="logTab('journal')">JOURNAL</button>
     </div>
   </div>
-  <div class="journal-entries" id="journal-entries"></div>
+
+  <!-- ── EVENTS PANEL ── -->
+  <div id="log-panel-events">
+
+    <!-- Category buttons -->
+    <div class="log-cat-row">
+      <button class="log-cat-btn active" id="lcat-work"   onclick="setLogCat('work',this)">
+        <span class="log-cat-dot" style="background:#38bdf8"></span>WORK
+      </button>
+      <button class="log-cat-btn" id="lcat-bmet"   onclick="setLogCat('bmet',this)">
+        <span class="log-cat-dot" style="background:#fb923c"></span>BMet
+      </button>
+      <button class="log-cat-btn" id="lcat-social" onclick="setLogCat('social',this)">
+        <span class="log-cat-dot" style="background:#a78bfa"></span>SOCIAL
+      </button>
+    </div>
+
+    <!-- Capture zone -->
+    <div class="log-capture-zone" id="log-capture-zone">
+      <div class="log-capture-row">
+        <!-- Camera — opens camera directly on mobile -->
+        <label class="log-capture-btn primary" for="log-camera-input">
+          <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+          CAMERA
+        </label>
+        <input type="file" accept="image/*" capture="environment" id="log-camera-input" style="display:none" onchange="handleLogCapture(event)">
+        <!-- File picker — for screenshots already taken -->
+        <label class="log-capture-btn" for="log-file-input">
+          <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17,8 12,3 7,8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          UPLOAD
+        </label>
+        <input type="file" accept="image/*" id="log-file-input" style="display:none" onchange="handleLogCapture(event)">
+      </div>
+      <div class="log-capture-hint">📸 Point at your calendar, rota or invite screenshot</div>
+      <img id="log-preview" class="preview-thumb" alt="Schedule preview">
+      <div class="ai-processing" id="log-processing">
+        <div class="ai-spinner work"></div>
+        <p id="log-processing-text">READING SCHEDULE...</p>
+      </div>
+    </div>
+
+    <!-- Extracted events list -->
+    <div id="log-events-list"></div>
+
+  </div>
+
+  <!-- ── JOURNAL PANEL ── -->
+  <div id="log-panel-journal" style="display:none">
+    <div class="journal-today">
+      <div class="journal-today-label">Today — <span id="journal-date"></span></div>
+      <textarea class="journal-textarea" id="journal-input" placeholder="Notes, reflections, tasks completed, things to follow up..." rows="4"></textarea>
+      <div class="journal-actions">
+        <button class="save-journal-btn" onclick="saveJournal()">Save</button>
+      </div>
+    </div>
+    <div class="journal-entries" id="journal-entries"></div>
+  </div>
 </div>
 
 <!-- PULSE SCREEN -->
@@ -788,7 +861,7 @@ input[type=time]:focus{border-color:var(--accent)}
   </div>
 </div>
 
-<!-- SCHEDULE SCREEN (merged Work + BMET) -->
+<!-- SCHEDULE SCREEN (merged Work + BMet) -->
 <div class="screen" id="screen-sched">
   <div style="padding:48px 20px 0;border-bottom:1px solid var(--border);padding-bottom:14px">
     <div class="screen-title" style="margin-bottom:12px">SCHEDULE</div>
@@ -802,7 +875,7 @@ input[type=time]:focus{border-color:var(--accent)}
   <!-- LEGEND -->
   <div class="sched-legend">
     <div class="legend-item"><div class="legend-dot" style="background:#38bdf8"></div><span>BMW / WORK</span></div>
-    <div class="legend-item"><div class="legend-dot" style="background:#fb923c"></div><span>BMET / BCU</span></div>
+    <div class="legend-item"><div class="legend-dot" style="background:#fb923c"></div><span>BMet College</span></div>
     <div class="legend-item"><div class="legend-dot" style="background:#ff4444"></div><span>DEADLINE</span></div>
   </div>
 
@@ -827,22 +900,22 @@ input[type=time]:focus{border-color:var(--accent)}
     </div>
     <div id="work-upload-status" class="sched-upload-status"></div>
 
-    <!-- BMET upload -->
+    <!-- BMet upload -->
     <div class="sched-section-head" style="margin-top:16px">
       <div class="sched-section-dot" style="background:#fb923c"></div>
-      <span>BMET / BCU</span>
+      <span>BMet College</span>
       <button class="sched-clear-btn" onclick="clearPortalEvents('bmet')">CLEAR</button>
     </div>
     <div class="upload-zone bmet" id="bmet-upload-zone" style="margin:0 20px 0">
       <input type="file" accept="image/*" id="bmet-schedule-input" onchange="handleUpload(event,'bmet')">
       <div class="upload-icon">📸</div>
-      <div class="upload-title">Drop BMET / BCU screenshot</div>
-      <div class="upload-sub">Rota · Outlook · Teams · Timetable</div>
+      <div class="upload-title">Drop BMet timetable screenshot</div>
+      <div class="upload-sub">BMet Timetable · Moodle · Outlook</div>
     </div>
-    <img class="preview-thumb" id="bmet-preview" alt="BMET schedule" style="margin:8px 20px 0;width:calc(100% - 40px)">
+    <img class="preview-thumb" id="bmet-preview" alt="BMet timetable" style="margin:8px 20px 0;width:calc(100% - 40px)">
     <div class="ai-processing" id="bmet-processing" style="margin:0 20px">
       <div class="ai-spinner bmet"></div>
-      <p>EXTRACTING BMET EVENTS...</p>
+      <p>READING BMet TIMETABLE...</p>
     </div>
     <div id="bmet-upload-status" class="sched-upload-status"></div>
 
@@ -903,7 +976,7 @@ input[type=time]:focus{border-color:var(--accent)}
         </div>
         <input type="time" class="time-input" id="reminder-time" value="08:00" onchange="saveReminderTime()">
       </div>
-      <div class="settings-row" id="time-row2" style="opacity:.4;pointer-events:none">
+      <div class="settings-row" id="time-row2">
         <div class="settings-row-left">
           <div class="settings-row-icon">🧪</div>
           <div class="settings-row-info">
@@ -1180,20 +1253,47 @@ function toggleJazz(){
 function setJazzVol(v){document.getElementById('jazz-audio').volume=v/100;}
 
 // ── RSS FEED ENGINE ──────────────────────────────────────────────────────────
-const PROXY='https://api.allorigins.win/get?url=';
+// Multiple CORS proxies — tries each in order until one works
+const PROXIES=[
+  url=>`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`,
+  url=>`https://corsproxy.io/?${encodeURIComponent(url)}`,
+  url=>`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
+];
+const PROXY='https://api.allorigins.win/get?url='; // kept for football-data calls
+
+async function fetchWithProxy(url){
+  for(const makeUrl of PROXIES){
+    try{
+      const res=await fetch(makeUrl(url),{signal:AbortSignal.timeout(7000)});
+      if(!res.ok)continue;
+      const text=await res.text();
+      // allorigins returns JSON with .contents; others return raw
+      try{
+        const json=JSON.parse(text);
+        if(json.contents)return json.contents;
+      }catch(e){}
+      return text;
+    }catch(e){continue;}
+  }
+  return null;
+}
+
 async function fetchRSS(url){
   try{
-    const res=await fetch(PROXY+encodeURIComponent(url),{signal:AbortSignal.timeout(8000)});
-    const data=await res.json();
+    const raw=await fetchWithProxy(url);
+    if(!raw)return[];
     const parser=new DOMParser();
-    const doc=parser.parseFromString(data.contents,'text/xml');
-    const items=[...doc.querySelectorAll('item')];
-    return items.map(i=>({
-      title:(i.querySelector('title')?.textContent||'').replace(/<[^>]*>/g,'').trim(),
-      link:(i.querySelector('link')?.textContent||i.querySelector('guid')?.textContent||'#').trim(),
-      date:i.querySelector('pubDate')?.textContent||'',
-      source:doc.querySelector('channel>title')?.textContent||''
-    })).filter(i=>i.title&&i.title.length>5).slice(0,6);
+    const doc=parser.parseFromString(raw,'text/xml');
+    // Try RSS items first, then Atom entries
+    let items=[...doc.querySelectorAll('item')];
+    if(!items.length)items=[...doc.querySelectorAll('entry')];
+    return items.map(i=>{
+      const title=(i.querySelector('title')?.textContent||'').replace(/<!\[CDATA\[|\]\]>/g,'').replace(/<[^>]*>/g,'').trim();
+      const link=i.querySelector('link')?.getAttribute('href')||i.querySelector('link')?.textContent||i.querySelector('guid')?.textContent||'#';
+      const date=i.querySelector('pubDate')?.textContent||i.querySelector('updated')?.textContent||i.querySelector('published')?.textContent||'';
+      const source=doc.querySelector('channel>title,feed>title')?.textContent||'';
+      return{title,link:link.trim(),date,source};
+    }).filter(i=>i.title&&i.title.length>5).slice(0,6);
   }catch(e){return[];}
 }
 function timeAgo(dateStr){
@@ -1544,6 +1644,193 @@ function renderStats(){
     breakdown.innerHTML+=`<div class="breakdown-row"><div class="breakdown-icon">${h.icon}</div><div class="breakdown-bar-wrap"><div class="breakdown-name">${h.name}</div><div class="breakdown-bar-bg"><div class="breakdown-bar-fill" style="width:${pct}%"></div></div></div><div class="breakdown-pct">${pct}%</div></div>`;
   });
 }
+// ── LOG TAB ───────────────────────────────────────────────────────────────
+let currentLogCat='work';
+function logTab(tab){
+  document.querySelectorAll('.sched-tab').forEach(b=>b.classList.remove('active'));
+  document.getElementById('ltab-'+tab).classList.add('active');
+  document.getElementById('log-panel-events').style.display=tab==='events'?'block':'none';
+  document.getElementById('log-panel-journal').style.display=tab==='journal'?'block':'none';
+  if(tab==='journal')renderJournal();
+  if(tab==='events')renderLogEvents();
+}
+function setLogCat(cat,btn){
+  currentLogCat=cat;
+  document.querySelectorAll('.log-cat-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderLogEvents();
+}
+const CAT_COLORS={work:'#38bdf8',bmet:'#fb923c',social:'#a78bfa'};
+const CAT_LABELS={work:'WORK / BMW',bmet:'BMet COLLEGE',social:'SOCIAL / PERSONAL'};
+
+async function handleLogCapture(e){
+  const file=e.target.files[0];if(!file)return;
+  e.target.value=''; // reset so same file can be re-selected
+  const reader=new FileReader();
+  reader.onload=async ev=>{
+    const base64=ev.target.result;
+    const preview=document.getElementById('log-preview');
+    preview.src=base64;preview.classList.add('show');
+    const proc=document.getElementById('log-processing');
+    const procText=document.getElementById('log-processing-text');
+    proc.classList.add('active');
+    procText.textContent=`READING ${CAT_LABELS[currentLogCat]} SCHEDULE...`;
+    try{
+      const events=await extractLogEvents(base64.split(',')[1],currentLogCat);
+      if(!state.portalEvents)state.portalEvents={};
+      if(!state.portalEvents[currentLogCat])state.portalEvents[currentLogCat]=[];
+      // Merge — avoid duplicates by title+date
+      events.forEach(ev=>{
+        const exists=state.portalEvents[currentLogCat].some(x=>x.title===ev.title&&x.date===ev.date);
+        if(!exists)state.portalEvents[currentLogCat].push(ev);
+      });
+      save();
+      scheduleAllEventNotifications();
+      renderLogEvents();
+      showToast(`✓ ${events.length} event${events.length!==1?'s':''} added from screenshot`);
+    }catch(err){
+      showToast('Could not read schedule — try a clearer screenshot');
+      console.error(err);
+    }
+    proc.classList.remove('active');
+  };
+  reader.readAsDataURL(file);
+}
+
+async function extractLogEvents(base64Data,cat){
+  const today=new Date();
+  const todayStr=today.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  const catContext={
+    work:'This is a work calendar — Google Calendar, Outlook, Teams. Look for meetings, standups, reviews, project deadlines, calls, and shifts.',
+    bmet:'This is a BMet is Birmingham Metropolitan College (bmet.ac.uk). Look for lectures, seminars, tutorials, coursework deadlines, assessments, college timetable slots, placement days, and academic events.',
+    social:'This is a personal or social calendar. Look for social events, appointments, parties, dinners, travel, gym sessions, family events, and personal reminders.'
+  }[cat]||'Extract all visible calendar events.';
+  const response=await fetch('https://api.anthropic.com/v1/messages',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({
+      model:'claude-sonnet-4-20250514',
+      max_tokens:1200,
+      messages:[{role:'user',content:[
+        {type:'image',source:{type:'base64',media_type:file?.type||'image/jpeg',data:base64Data}},
+        {type:'text',text:`Today is ${todayStr}. ${catContext}
+
+Extract ALL visible events from today onwards. Return ONLY valid JSON, no markdown:
+{"events":[{"id":1,"title":"Event title","type":"meeting|deadline|event|shift","date":"YYYY-MM-DD","time":"HH:MM","endTime":"HH:MM or null","location":"location or null","platform":"Teams|Zoom|Google Meet|null","notes":"any extra detail or null"}]}
+
+Rules:
+- type "meeting" = meetings, calls, standups, shifts, handovers
+- type "deadline" = due dates, submissions, deadlines (use time "23:59" if no time shown)
+- type "event" = social events, appointments, reminders, training
+- type "shift" = work shifts with start/end times
+- Only include events from today (${today.toISOString().split('T')[0]}) onwards
+- Assume year ${today.getFullYear()} if not shown
+- If time is unclear use "09:00"`}
+      ]}]
+    })
+  });
+  const data=await response.json();
+  const text=data.content.filter(b=>b.type==='text').map(b=>b.text).join('');
+  const parsed=JSON.parse(text.replace(/```json|```/g,'').trim());
+  return(parsed.events||[]).map(ev=>({...ev,cat,portal:cat}));
+}
+
+function renderLogEvents(){
+  const el=document.getElementById('log-events-list');
+  const events=(state.portalEvents||{})[currentLogCat]||[];
+  const today=new Date().toISOString().split('T')[0];
+  // Sort by date+time, filter past
+  const sorted=events
+    .filter(e=>e.date>=today)
+    .sort((a,b)=>(a.date+a.time)<(b.date+b.time)?-1:1);
+  if(!sorted.length){
+    el.innerHTML=`<div class="log-events-empty">
+      NO UPCOMING ${CAT_LABELS[currentLogCat]} EVENTS<br>
+      Use CAMERA or UPLOAD to scan a screenshot
+    </div>`;
+    return;
+  }
+  // Group by date
+  const grouped={};
+  sorted.forEach(ev=>{
+    if(!grouped[ev.date])grouped[ev.date]=[];
+    grouped[ev.date].push(ev);
+  });
+  const color=CAT_COLORS[currentLogCat];
+  let html='';
+  Object.entries(grouped).forEach(([date,evs])=>{
+    const d=new Date(date+'T12:00:00');
+    const label=d.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'});
+    html+=`<div class="log-section-head">${label}</div>`;
+    evs.forEach((ev,i)=>{
+      const typeIcon={meeting:'🤝',deadline:'⚠️',event:'📅',shift:'🔧'}[ev.type]||'📅';
+      const timeLabel=ev.time?(ev.endTime?`${ev.time} → ${ev.endTime}`:ev.time):'';
+      html+=`<div class="log-event-card">
+        <div class="log-event-stripe" style="background:${color}"></div>
+        <div class="log-event-body">
+          <div class="log-event-title">${typeIcon} ${ev.title}</div>
+          ${timeLabel?`<div class="log-event-time">${timeLabel}</div>`:''}
+          <div class="log-event-meta">${[ev.location,ev.platform,ev.notes].filter(Boolean).join(' · ')||ev.type.toUpperCase()}</div>
+          <div class="log-event-actions">
+            <button class="log-event-del" onclick="deleteLogEvent('${currentLogCat}',${ev.id||i})">✕ REMOVE</button>
+          </div>
+        </div>
+      </div>`;
+    });
+  });
+  el.innerHTML=html;
+}
+
+function deleteLogEvent(cat,id){
+  if(!state.portalEvents?.[cat])return;
+  state.portalEvents[cat]=state.portalEvents[cat].filter((e,i)=>e.id!==id&&i!==id);
+  save();renderLogEvents();
+}
+
+// ── EVENT NOTIFICATIONS ────────────────────────────────────────────────────
+function scheduleAllEventNotifications(){
+  ['work','bmet','social'].forEach(cat=>{
+    const events=(state.portalEvents||{})[cat]||[];
+    scheduleEventNotifs(events,cat);
+  });
+}
+function scheduleEventNotifs(events,cat){
+  // Clear old timers for this cat
+  const timerKey=`_notifTimers_${cat}`;
+  if(state[timerKey])state[timerKey].forEach(t=>clearTimeout(t));
+  state[timerKey]=[];
+  if(Notification.permission!=='granted')return;
+  const color=CAT_COLORS[cat];
+  const now=Date.now();
+  events.forEach(ev=>{
+    if(!ev.date||!ev.time)return;
+    const evMs=new Date(ev.date+'T'+ev.time).getTime();
+    // Notify 30 min before
+    const ms30=evMs-(30*60*1000)-now;
+    // Notify at event time
+    const msNow=evMs-now;
+    const title=`${CAT_LABELS[cat]} — ${ev.title}`;
+    if(ms30>0){
+      const t=setTimeout(()=>{
+        fireEventNotif(title,'Starting in 30 minutes'+(ev.location?` at ${ev.location}`:''),ev);
+        if(_sw&&_sw.active)_sw.active.postMessage({type:'TEST_NOTIF',payload:{title,body:'Starting in 30 minutes'+(ev.location?` · ${ev.location}`:'')}});
+      },ms30);
+      state[timerKey].push(t);
+    }
+    if(msNow>0&&msNow<7*24*60*60*1000){ // only within 7 days
+      const t=setTimeout(()=>{
+        fireEventNotif(title,'Starting now'+(ev.platform?` · Join on ${ev.platform}`:''),ev);
+        if(_sw&&_sw.active)_sw.active.postMessage({type:'TEST_NOTIF',payload:{title,body:'Starting now'+(ev.platform?` · ${ev.platform}`:'')}});
+      },msNow);
+      state[timerKey].push(t);
+    }
+  });
+}
+function fireEventNotif(title,body,ev){
+  if(Notification.permission!=='granted')return;
+  new Notification(title,{body,icon:'./favicon.ico',tag:'kern-event-'+ev.id,vibrate:[200,100,200]});
+}
+
 function renderJournal(){
   document.getElementById('journal-date').textContent=formatDate(new Date());
   const entries=document.getElementById('journal-entries');
@@ -1567,7 +1854,7 @@ function confetti(){
     document.body.appendChild(el);el.addEventListener('animationend',()=>el.remove());
   }
 }
-// ── WORK / BMET PORTALS ────────────────────────────────────────────────────
+// ── WORK / BMet PORTALS ────────────────────────────────────────────────────
 async function handleUpload(e, portal){
   const file=e.target.files[0];if(!file)return;
   const reader=new FileReader();
@@ -1599,7 +1886,7 @@ async function extractEvents(base64Data, portal){
   const today=new Date();
   const todayStr=today.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
   const portalContext=portal==='bmet'
-    ?'This is a BMET (Biomedical Engineering Technician) rota or hospital schedule. Look for clinical equipment maintenance shifts, handovers, on-call duties, PPM deadlines, equipment reviews, and training sessions.'
+    ?'This is a BMet is Birmingham Metropolitan College (bmet.ac.uk). Look for lectures, seminars, tutorials, coursework deadlines, assessments, college timetable slots, placement days, and academic events.'
     :'This is a general work schedule from Google Calendar or Outlook. Look for meetings, standups, reviews, project deadlines, and calls.';
   const response=await fetch('https://api.anthropic.com/v1/messages',{
     method:'POST',
@@ -1764,7 +2051,7 @@ function renderDayEvents(dateStr){
   }
   const rows=evs.map(ev=>{
     const col=ev.portal==='work'?'#38bdf8':ev.type==='deadline'?'#ff4444':'#fb923c';
-    const source=ev.portal==='work'?'BMW/WORK':'BMET/BCU';
+    const source=ev.portal==='work'?'BMW/WORK':'BMet';
     const timeLabel=ev.time&&ev.time!=='23:59'?ev.time:'ALL DAY';
     return`<div class="cal-event-row">
       <div class="cal-event-bar" style="background:${col}"></div>
@@ -1785,7 +2072,7 @@ function schedulePortalNotifications(portal){
   if(Notification.permission!=='granted')return;
   const events=(state.portalEvents||{})[portal]||[];
   const now=new Date();
-  const label=portal==='bmet'?'🏥 BMET':'💼 Work';
+  const label=portal==='bmet'?'🎓 BMet':'💼 Work';
   events.forEach(ev=>{
     const evDate=new Date(ev.date+'T'+(ev.time||'00:00'));
     if(evDate<now)return;
@@ -2295,7 +2582,6 @@ function toggleGlobalReminder(){
         state.reminderEnabled=true;
         toggle.classList.add('on');
         document.getElementById('time-row').style.cssText='';
-        document.getElementById('time-row2').style.cssText='';
         scheduleReminders();save();showToast('Reminder set! 🔔');
       } else {
         showToast('Please allow notifications first');
@@ -2305,29 +2591,30 @@ function toggleGlobalReminder(){
     state.reminderEnabled=false;
     toggle.classList.remove('on');
     document.getElementById('time-row').style.cssText='opacity:.4;pointer-events:none';
-    document.getElementById('time-row2').style.cssText='opacity:.4;pointer-events:none';
+    swCancel();
     save();showToast('Reminder off');
   }
 }
 function saveReminderTime(){
-  state.reminderTime=document.getElementById('reminder-time').value;
-  save();scheduleReminders();showToast('Time saved ✓');
+  state.reminderTime = document.getElementById('reminder-time').value;
+  save(); scheduleReminders(); showToast('Time saved ✓');
 }
 function scheduleReminders(){
-  if(!state.reminderEnabled||Notification.permission!=='granted')return;
-  // Clear existing
-  if(state._reminderTimer)clearTimeout(state._reminderTimer);
-  const [h,m]=(state.reminderTime||'08:00').split(':').map(Number);
-  const now=new Date();
-  const next=new Date();
-  next.setHours(h,m,0,0);
-  if(next<=now)next.setDate(next.getDate()+1);
-  const ms=next-now;
-  state._reminderTimer=setTimeout(()=>{
+  if(!state.reminderEnabled || Notification.permission!=='granted') return;
+  // In-page fallback timer (works when app is open)
+  if(state._reminderTimer) clearTimeout(state._reminderTimer);
+  const [h,m] = (state.reminderTime||'08:00').split(':').map(Number);
+  const now = new Date();
+  const next = new Date();
+  next.setHours(h, m, 0, 0);
+  if(next <= now) next.setDate(next.getDate()+1);
+  const ms = next - now;
+  state._reminderTimer = setTimeout(()=>{
     fireReminder();
-    // Re-schedule for next day
-    state._reminderTimer=setInterval(fireReminder,86400000);
-  },ms);
+    state._reminderTimer = setInterval(fireReminder, 86400000);
+  }, ms);
+  // Also tell the service worker (works when app is closed)
+  swSchedule(state.reminderTime || '08:00');
 }
 function fireReminder(){
   if(Notification.permission!=='granted')return;
@@ -2340,10 +2627,19 @@ function fireReminder(){
   new Notification('KERN_OS',{body:msgs[Math.floor(Math.random()*msgs.length)],icon:'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="20" fill="%23020207"/><text y=".9em" font-size="80">✦</text></svg>',badge:'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="20" fill="%23ffb300"/></svg>'});
 }
 function sendTestNotif(){
+  if(!('Notification' in window)){showToast('Notifications not supported on this browser');return;}
   requestNotifPermission().then(granted=>{
-    if(!granted){showToast('Notifications blocked');return}
-    new Notification('KERN_OS',{body:"REMINDER: habit sequence not yet completed today."});
-    showToast('Test sent!');
+    if(!granted){showToast('Enable notifications in your phone settings');return;}
+    // Use SW if available (works when app is closed), else fallback
+    if(_sw && _sw.active){
+      swTest();
+    } else {
+      new Notification('KERN_OS ✦',{
+        body:'Good morning, Akosaemeka. Your daily briefing is ready.',
+        icon:'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="%23020207"/><text y=".9em" font-size="80">✦</text></svg>'
+      });
+      showToast('Test notification sent ✓');
+    }
   });
 }
 function renderSettings(){
@@ -2354,11 +2650,9 @@ function renderSettings(){
   if(state.reminderEnabled){
     toggle.classList.add('on');
     document.getElementById('time-row').style.cssText='';
-    document.getElementById('time-row2').style.cssText='';
   } else {
     toggle.classList.remove('on');
     document.getElementById('time-row').style.cssText='opacity:.4;pointer-events:none';
-    document.getElementById('time-row2').style.cssText='opacity:.4;pointer-events:none';
   }
   if(state.reminderTime)document.getElementById('reminder-time').value=state.reminderTime;
   // Per habit
@@ -2393,7 +2687,7 @@ function showScreen(name){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById('screen-'+name).classList.add('active');
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.toggle('active',b.dataset.screen===name));
-  if(name==='journal')renderJournal();
+  if(name==='journal'){logTab('events');renderLogEvents();}
   if(name==='pulse')initPulse();
   if(name==='markets')initMarkets();
   if(name==='settings')renderSettings();
@@ -2413,11 +2707,59 @@ if(state.lastLoginDate===_todayKey && state.userName){
   document.getElementById('screen-onboard').classList.add('active');
 }
 if(state.reminderEnabled)scheduleReminders();
+if(Notification.permission==='granted')scheduleAllEventNotifications();
 if(state.portalEvents?.work?.length)schedulePortalNotifications('work');
 if(state.portalEvents?.bmet?.length)schedulePortalNotifications('bmet');
 document.getElementById('delete-modal').addEventListener('click',function(e){if(e.target===this)closeModal()});
 document.getElementById('user-name-input').addEventListener('keydown',e=>{if(e.key==='Enter')startApp()});
 window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();setTimeout(()=>showToast('Add to Home Screen for best experience!'),2000)});
+
+// ── SERVICE WORKER REGISTRATION ─────────────────────────────────────────────
+let _sw = null;
+async function registerSW(){
+  if(!('serviceWorker' in navigator))return;
+  try{
+    const reg = await navigator.serviceWorker.register('./sw.js', {scope:'./'});
+    await navigator.serviceWorker.ready;
+    _sw = reg;
+    console.log('KERN SW registered ✓');
+    // Re-schedule alarm if reminders are on
+    if(state.reminderEnabled && Notification.permission === 'granted'){
+      swSchedule(state.reminderTime || '08:00');
+    }
+  }catch(e){
+    console.warn('SW registration failed:', e);
+  }
+}
+function swSchedule(timeStr){
+  if(!_sw || !_sw.active) return;
+  const [h, m] = timeStr.split(':').map(Number);
+  _sw.active.postMessage({
+    type: 'SCHEDULE_DAILY',
+    payload: {
+      hour: h,
+      minute: m,
+      title: 'KERN_OS ✦',
+      body: `Good morning, Akosaemeka. Your daily briefing is ready.`
+    }
+  });
+}
+function swCancel(){
+  if(!_sw || !_sw.active) return;
+  _sw.active.postMessage({type: 'CANCEL_DAILY'});
+}
+function swTest(){
+  if(!_sw || !_sw.active){ sendTestNotif(); return; }
+  _sw.active.postMessage({
+    type: 'TEST_NOTIF',
+    payload: {
+      title: 'KERN_OS ✦',
+      body: 'Good morning, Akosaemeka. Your daily briefing is ready.'
+    }
+  });
+  showToast('Test notification sent ✓');
+}
+registerSW();
 </script>
 </body>
 </html>
