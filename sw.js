@@ -1,6 +1,6 @@
 // KERN Service Worker — background notifications + cache management
-const SW_VERSION = 'kern-sw-v4'; // bump this with every update
-const CACHE_NAME = 'kern-cache-v4';
+const SW_VERSION = 'kern-sw-v5'; // bump this with every update
+const CACHE_NAME = 'kern-cache-v5';
 const FILES_TO_CACHE = ['./kern.html', './sw.js'];
 
 // ── INSTALL — cache key files ───────────────────────────────────────────────
