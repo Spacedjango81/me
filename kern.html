@@ -1866,7 +1866,9 @@ async function handleLogCapture(e){
       } else if(err.message.includes('fetch')||err.message.includes('network')||err.message.includes('Failed')){
         msg+='network error. Check your connection.';
       } else if(err.message.includes('API error 4')){
-        msg+='API key rejected. Check key in SYS tab.';
+        msg+=`key rejected (${err.message}) — try a new key`;
+      } else if(err.message.includes('API error 5')){
+        msg+='Anthropic server error — try again shortly';
       } else if(err.message.includes('JSON')){
         msg+='unexpected response. Try again.';
       } else {
@@ -1917,7 +1919,11 @@ Rules:
       ]}]
     })
   });
-  if(!response.ok) throw new Error(`API error ${response.status}`);
+  if(!response.ok){
+    const errData=await response.json().catch(()=>({}));
+    console.error('API response error:',response.status, errData);
+    throw new Error(`API error ${response.status}: ${errData?.error?.message||'unknown'}`);
+  }
   const data=await response.json();
   if(data.error) throw new Error(data.error.message||'API error');
   const text=data.content.filter(b=>b.type==='text').map(b=>b.text).join('');
@@ -2858,7 +2864,12 @@ function saveApiKey(){
 function apiHeaders(){
   const key=getApiKey();
   const h={'Content-Type':'application/json','anthropic-dangerous-direct-browser-access':'true'};
-  if(key)h['x-api-key']=key;
+  if(key){
+    h['x-api-key']=key;
+    console.log('API key present, length:',key.length,'starts:',key.substring(0,12));
+  } else {
+    console.warn('No API key found in localStorage');
+  }
   return h;
 }
 function refreshApp(){
