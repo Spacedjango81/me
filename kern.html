@@ -1026,15 +1026,15 @@ input[type=time]:focus{border-color:var(--accent)}
           </div>
         </div>
       </div>
-      <div class="settings-row" style="cursor:pointer" onclick="refreshApp()">
+      <div class="settings-row" style="cursor:pointer;background:rgba(34,197,94,0.08);border-left:3px solid #22c55e" onclick="refreshApp()">
         <div class="settings-row-left">
-          <div class="settings-row-icon">↻</div>
+          <div class="settings-row-icon" style="font-size:20px;font-weight:900;color:#22c55e">↻</div>
           <div class="settings-row-info">
-            <div class="settings-row-label">Refresh app</div>
+            <div class="settings-row-label" style="color:#22c55e;font-size:13px;font-weight:700;letter-spacing:1px">REFRESH APP</div>
             <div class="settings-row-sub">Pull latest updates without losing data</div>
           </div>
         </div>
-        <span style="color:var(--muted);font-size:18px">›</span>
+        <span style="color:#22c55e;font-size:22px;font-weight:700">›</span>
       </div>
       <div class="settings-row" style="cursor:pointer" onclick="resetApp()">
         <div class="settings-row-left">
@@ -1797,7 +1797,8 @@ function renderLogEvents(){renderLogCalendar();}
 
 async function handleLogCapture(e){
   const file=e.target.files[0];if(!file)return;
-  e.target.value=''; // reset so same file can be re-selected
+  const mimeType=file.type||'image/jpeg';
+  e.target.value='';
   const reader=new FileReader();
   reader.onload=async ev=>{
     const base64=ev.target.result;
@@ -1808,10 +1809,9 @@ async function handleLogCapture(e){
     proc.classList.add('active');
     procText.textContent=`READING ${CAT_LABELS[currentLogCat]} SCHEDULE...`;
     try{
-      const events=await extractLogEvents(base64.split(',')[1],currentLogCat);
+      const events=await extractLogEvents(base64.split(',')[1], currentLogCat, mimeType);
       if(!state.portalEvents)state.portalEvents={};
       if(!state.portalEvents[currentLogCat])state.portalEvents[currentLogCat]=[];
-      // Deduplicate — match on title + date + time (normalised lowercase)
       let added=0;
       events.forEach(ev=>{
         const key=(ev.title||'').toLowerCase().trim()+'|'+(ev.date||'')+'|'+(ev.time||'');
@@ -1822,25 +1822,21 @@ async function handleLogCapture(e){
         if(!exists){state.portalEvents[currentLogCat].push(ev);added++;}
       });
       save();
-      // Clear preview image immediately
-      preview.classList.remove('show');
-      preview.src='';
+      preview.classList.remove('show');preview.src='';
       scheduleAllEventNotifications();
-      renderLogEvents();
+      renderLogCalendar();
       const skipped=events.length-added;
-      const msg=added>0
-        ?`✓ ${added} event${added!==1?'s':''} added${skipped>0?` · ${skipped} duplicate${skipped!==1?'s':''} skipped`:''} — tap SCHED to view`
-        :`All ${events.length} events already exist`;
-      showToast(msg);
-      const schedBtn=document.querySelector('.nav-btn[data-screen="sched"]');
-      if(schedBtn&&added>0){
-        schedBtn.style.color='var(--accent)';
-        setTimeout(()=>schedBtn.style.color='',2000);
+      if(events.length===0){
+        showToast('No upcoming events found in image');
+      } else {
+        const msg=added>0
+          ?`✓ ${added} event${added!==1?'s':''} added${skipped>0?` · ${skipped} duplicate${skipped!==1?'s':''} skipped`:''}`
+          :`All ${events.length} events already saved`;
+        showToast(msg);
       }
     }catch(err){
-      showToast('Could not read schedule — try a clearer screenshot');
-      console.error(err);
-      // Clear preview on failure too
+      console.error('Schedule extraction error:', err);
+      showToast('Read failed — ensure image is clear and well lit');
       const preview=document.getElementById('log-preview');
       if(preview){preview.classList.remove('show');preview.src='';}
     }
@@ -1849,14 +1845,15 @@ async function handleLogCapture(e){
   reader.readAsDataURL(file);
 }
 
-async function extractLogEvents(base64Data,cat){
+async function extractLogEvents(base64Data, cat, mimeType){
   const today=new Date();
   const todayStr=today.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
   const catContext={
     work:'This is a work calendar — Google Calendar, Outlook, Teams. Look for meetings, standups, reviews, project deadlines, calls, and shifts.',
-    bmet:'This is a BMet is Birmingham Metropolitan College (bmet.ac.uk). Look for lectures, seminars, tutorials, coursework deadlines, assessments, college timetable slots, placement days, and academic events.',
+    bmet:'This is a BMet Birmingham Metropolitan College timetable. Look for lectures, seminars, tutorials, coursework deadlines, assessments, college timetable slots, placement days, and academic events.',
     social:'This is a personal or social calendar. Look for social events, appointments, parties, dinners, travel, gym sessions, family events, and personal reminders.'
   }[cat]||'Extract all visible calendar events.';
+  const safeType = (mimeType && mimeType.startsWith('image/')) ? mimeType : 'image/jpeg';
   const response=await fetch('https://api.anthropic.com/v1/messages',{
     method:'POST',
     headers:{'Content-Type':'application/json'},
@@ -1864,7 +1861,7 @@ async function extractLogEvents(base64Data,cat){
       model:'claude-sonnet-4-20250514',
       max_tokens:1200,
       messages:[{role:'user',content:[
-        {type:'image',source:{type:'base64',media_type:file?.type||'image/jpeg',data:base64Data}},
+        {type:'image',source:{type:'base64',media_type:safeType,data:base64Data}},
         {type:'text',text:`Today is ${todayStr}. ${catContext}
 
 Extract ALL visible events from today onwards. Return ONLY valid JSON, no markdown:
@@ -1877,67 +1874,22 @@ Rules:
 - type "shift" = work shifts with start/end times
 - Only include events from today (${today.toISOString().split('T')[0]}) onwards
 - Assume year ${today.getFullYear()} if not shown
-- If time is unclear use "09:00"`}
+- If time is unclear use "09:00"
+- If no events visible return {"events":[]}`}
       ]}]
     })
   });
+  if(!response.ok) throw new Error(`API error ${response.status}`);
   const data=await response.json();
+  if(data.error) throw new Error(data.error.message||'API error');
   const text=data.content.filter(b=>b.type==='text').map(b=>b.text).join('');
-  const parsed=JSON.parse(text.replace(/```json|```/g,'').trim());
-  return(parsed.events||[]).map(ev=>({...ev,cat,portal:cat}));
+  const clean=text.replace(/```json|```/g,'').trim();
+  const parsed=JSON.parse(clean);
+  return (parsed.events||[]).map(ev=>({...ev,cat,portal:cat}));
 }
 
-function renderLogEvents(){
-  const el=document.getElementById('log-events-list');
-  const events=(state.portalEvents||{})[currentLogCat]||[];
-  const today=new Date().toISOString().split('T')[0];
-  // Sort by date+time, filter past
-  const sorted=events
-    .filter(e=>e.date>=today)
-    .sort((a,b)=>(a.date+a.time)<(b.date+b.time)?-1:1);
-  if(!sorted.length){
-    el.innerHTML=`<div class="log-events-empty">
-      NO UPCOMING ${CAT_LABELS[currentLogCat]} EVENTS<br>
-      Use CAMERA or UPLOAD to scan a screenshot
-    </div>`;
-    return;
-  }
-  // Group by date
-  const grouped={};
-  sorted.forEach(ev=>{
-    if(!grouped[ev.date])grouped[ev.date]=[];
-    grouped[ev.date].push(ev);
-  });
-  const color=CAT_COLORS[currentLogCat];
-  let html='';
-  Object.entries(grouped).forEach(([date,evs])=>{
-    const d=new Date(date+'T12:00:00');
-    const label=d.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'});
-    html+=`<div class="log-section-head">${label}</div>`;
-    evs.forEach((ev,i)=>{
-      const typeIcon={meeting:'🤝',deadline:'⚠️',event:'📅',shift:'🔧'}[ev.type]||'📅';
-      const timeLabel=ev.time?(ev.endTime?`${ev.time} → ${ev.endTime}`:ev.time):'';
-      html+=`<div class="log-event-card">
-        <div class="log-event-stripe" style="background:${color}"></div>
-        <div class="log-event-body">
-          <div class="log-event-title">${typeIcon} ${ev.title}</div>
-          ${timeLabel?`<div class="log-event-time">${timeLabel}</div>`:''}
-          <div class="log-event-meta">${[ev.location,ev.platform,ev.notes].filter(Boolean).join(' · ')||ev.type.toUpperCase()}</div>
-          <div class="log-event-actions">
-            <button class="log-event-del" onclick="deleteLogEvent('${currentLogCat}',${ev.id||i})">✕ REMOVE</button>
-          </div>
-        </div>
-      </div>`;
-    });
-  });
-  el.innerHTML=html;
-}
-
-function deleteLogEvent(cat,id){
-  if(!state.portalEvents?.[cat])return;
-  state.portalEvents[cat]=state.portalEvents[cat].filter((e,i)=>e.id!==id&&i!==id);
-  save();renderLogEvents();
-}
+// renderLogEvents — alias kept for compatibility
+function renderLogEvents(){renderLogCalendar();}
 
 // ── EVENT NOTIFICATIONS ────────────────────────────────────────────────────
 function scheduleAllEventNotifications(){
