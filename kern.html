@@ -224,16 +224,18 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:1
 
 /* ── LOG SCREEN ── */
 #screen-journal{padding:0 0 100px;overflow-y:auto}
-.log-cat-row{display:flex;gap:0;border-bottom:1px solid var(--border)}
-.log-cat-btn{flex:1;background:transparent;border:none;border-bottom:2px solid transparent;color:var(--muted);font-family:var(--font);font-size:9px;letter-spacing:1.5px;padding:11px 0;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;transition:all .2s;text-transform:uppercase}
-.log-cat-btn.active{color:var(--accent);border-bottom-color:var(--accent)}
-.log-cat-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
-.log-capture-zone{margin:16px 20px;border:1px solid var(--border);padding:16px;background:var(--surface)}
-.log-capture-row{display:flex;gap:10px;margin-bottom:12px}
-.log-capture-btn{flex:1;display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;border:1px solid var(--border);color:var(--text-dim);font-family:var(--font);font-size:10px;font-weight:700;letter-spacing:1.5px;cursor:pointer;transition:all .2s;text-transform:uppercase;background:transparent}
-.log-capture-btn.primary{border-color:var(--accent);color:var(--accent);background:var(--accent-dim)}
-.log-capture-btn:hover{border-color:var(--accent);color:var(--accent)}
-.log-capture-hint{font-size:9px;color:var(--muted);letter-spacing:1px;text-align:center;text-transform:uppercase}
+.log-capture-bar{display:flex;align-items:center;justify-content:space-between;padding:10px 20px;border-bottom:1px solid var(--border);background:var(--surface);gap:8px;flex-wrap:wrap}
+.log-capture-bar-left{display:flex;flex-direction:column;gap:6px;flex:1}
+.log-capture-bar-label{font-size:8px;color:var(--muted);letter-spacing:2px;text-transform:uppercase}
+.log-cat-pills{display:flex;gap:5px;flex-wrap:wrap}
+.log-cat-pill{background:transparent;border:1px solid var(--border);color:var(--muted);font-family:var(--font);font-size:8px;letter-spacing:1px;padding:3px 8px;cursor:pointer;transition:all .2s;text-transform:uppercase}
+.log-cat-pill.active{border-color:var(--accent);color:var(--accent);background:var(--accent-dim)}
+.log-capture-btns{display:flex;gap:6px;flex-shrink:0}
+.log-bar-btn{display:flex;align-items:center;gap:5px;padding:8px 12px;border:1px solid var(--border);color:var(--text-dim);font-family:var(--font);font-size:9px;font-weight:700;letter-spacing:1.5px;cursor:pointer;transition:all .2s;text-transform:uppercase;background:transparent}
+.log-bar-btn.primary{border-color:var(--accent);color:var(--accent);background:var(--accent-dim)}
+.log-bar-btn:hover{border-color:var(--accent);color:var(--accent)}
+.log-cal-legend{display:flex;gap:0;padding:8px 20px;border-bottom:1px solid var(--border);flex-wrap:wrap;gap:12px}
+.log-cal-nav{display:flex;align-items:center;justify-content:space-between;padding:10px 20px;border-bottom:1px solid var(--border)}
 .log-event-card{padding:14px 20px;border-bottom:1px solid var(--border);display:flex;gap:12px;align-items:flex-start}
 .log-event-stripe{width:3px;border-radius:0;flex-shrink:0;align-self:stretch;min-height:40px}
 .log-event-body{flex:1;min-width:0}
@@ -562,7 +564,7 @@ input[type=time]:focus{border-color:var(--accent)}
         <div class="greeting-label" id="greeting-label">Good morning</div>
         <div class="greeting-name" id="greeting-name"></div>
       </div>
-      <div class="streak-badge" id="today-date-badge">MON 9</div>
+      <div class="streak-badge" id="today-date-badge" onclick="showScreen('journal')" style="cursor:pointer" title="Open Calendar">MON 9</div>
     </div>
     <div class="weather-strip" id="weather-strip">
       <div class="weather-cell">
@@ -654,45 +656,62 @@ input[type=time]:focus{border-color:var(--accent)}
   <!-- ── EVENTS PANEL ── -->
   <div id="log-panel-events">
 
-    <!-- Category buttons -->
-    <div class="log-cat-row">
-      <button class="log-cat-btn active" id="lcat-work"   onclick="setLogCat('work',this)">
-        <span class="log-cat-dot" style="background:#38bdf8"></span>WORK
-      </button>
-      <button class="log-cat-btn" id="lcat-bmet"   onclick="setLogCat('bmet',this)">
-        <span class="log-cat-dot" style="background:#fb923c"></span>BMet
-      </button>
-      <button class="log-cat-btn" id="lcat-social" onclick="setLogCat('social',this)">
-        <span class="log-cat-dot" style="background:#a78bfa"></span>SOCIAL
-      </button>
-    </div>
-
-    <!-- Capture zone -->
-    <div class="log-capture-zone" id="log-capture-zone">
-      <div class="log-capture-row">
-        <!-- Camera — opens camera directly on mobile -->
-        <label class="log-capture-btn primary" for="log-camera-input">
-          <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
-          CAMERA
+    <!-- Compact capture bar -->
+    <div class="log-capture-bar">
+      <div class="log-capture-bar-left">
+        <span class="log-capture-bar-label">📸 SCAN CALENDAR</span>
+        <span class="log-cat-pills">
+          <button class="log-cat-pill active" id="lpill-work"   onclick="setLogCat('work',this)"  data-cat="work">🔵 WORK</button>
+          <button class="log-cat-pill" id="lpill-bmet"   onclick="setLogCat('bmet',this)"  data-cat="bmet">🟠 BMet</button>
+          <button class="log-cat-pill" id="lpill-social" onclick="setLogCat('social',this)" data-cat="social">🟣 SOCIAL</button>
+        </span>
+      </div>
+      <div class="log-capture-btns">
+        <label class="log-bar-btn primary" for="log-camera-input">
+          <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+          CAM
         </label>
         <input type="file" accept="image/*" capture="environment" id="log-camera-input" style="display:none" onchange="handleLogCapture(event)">
-        <!-- File picker — for screenshots already taken -->
-        <label class="log-capture-btn" for="log-file-input">
-          <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17,8 12,3 7,8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-          UPLOAD
+        <label class="log-bar-btn" for="log-file-input">
+          <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17,8 12,3 7,8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          FILE
         </label>
         <input type="file" accept="image/*" id="log-file-input" style="display:none" onchange="handleLogCapture(event)">
       </div>
-      <div class="log-capture-hint">📸 Point at your calendar, rota or invite screenshot</div>
-      <img id="log-preview" class="preview-thumb" alt="Schedule preview">
-      <div class="ai-processing" id="log-processing">
-        <div class="ai-spinner work"></div>
-        <p id="log-processing-text">READING SCHEDULE...</p>
-      </div>
     </div>
 
-    <!-- Extracted events list -->
-    <div id="log-events-list"></div>
+    <!-- Processing indicator -->
+    <div class="ai-processing" id="log-processing" style="margin:0 20px">
+      <div class="ai-spinner work"></div>
+      <p id="log-processing-text">READING SCHEDULE...</p>
+    </div>
+    <img id="log-preview" class="preview-thumb" alt="Schedule preview" style="display:none">
+
+    <!-- Colour legend -->
+    <div class="log-cal-legend">
+      <div class="legend-item"><div class="legend-dot" style="background:#38bdf8"></div><span>WORK</span></div>
+      <div class="legend-item"><div class="legend-dot" style="background:#fb923c"></div><span>BMet</span></div>
+      <div class="legend-item"><div class="legend-dot" style="background:#a78bfa"></div><span>SOCIAL</span></div>
+      <div class="legend-item"><div class="legend-dot" style="background:#ff4444"></div><span>DEADLINE</span></div>
+    </div>
+
+    <!-- Month navigation -->
+    <div class="log-cal-nav">
+      <button class="sched-nav-btn" onclick="logCalMove(-1)">◀</button>
+      <div id="log-cal-month" style="font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim)"></div>
+      <button class="sched-nav-btn" onclick="logCalMove(1)">▶</button>
+    </div>
+
+    <!-- Day of week headers -->
+    <div class="cal-dow-row">
+      <div>MO</div><div>TU</div><div>WE</div><div>TH</div><div>FR</div><div>SA</div><div>SU</div>
+    </div>
+
+    <!-- Calendar grid -->
+    <div class="cal-grid" id="log-cal-grid"></div>
+
+    <!-- Selected day events -->
+    <div id="log-cal-day-events" style="padding:0 20px 20px"></div>
 
   </div>
 
@@ -1062,7 +1081,7 @@ function initApp(){
   // Today date badge
   const now=new Date();
   const dayNames=['SUN','MON','TUE','WED','THU','FRI','SAT'];
-  document.getElementById('today-date-badge').textContent=dayNames[now.getDay()]+' '+now.getDate();
+  document.getElementById('today-date-badge').innerHTML='<svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="opacity:.6"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> '+dayNames[now.getDay()]+' '+now.getDate();
   showScreen('home');
   loadWeather();
   loadHeadlines(false);
@@ -1647,22 +1666,124 @@ function renderStats(){
 }
 // ── LOG TAB ───────────────────────────────────────────────────────────────
 let currentLogCat='work';
+let logCalYear=new Date().getFullYear();
+let logCalMonth=new Date().getMonth();
+let logCalSelected=new Date().toISOString().split('T')[0];
+
 function logTab(tab){
   document.querySelectorAll('.sched-tab').forEach(b=>b.classList.remove('active'));
   document.getElementById('ltab-'+tab).classList.add('active');
   document.getElementById('log-panel-events').style.display=tab==='events'?'block':'none';
   document.getElementById('log-panel-journal').style.display=tab==='journal'?'block':'none';
   if(tab==='journal')renderJournal();
-  if(tab==='events')renderLogEvents();
+  if(tab==='events')renderLogCalendar();
 }
 function setLogCat(cat,btn){
   currentLogCat=cat;
-  document.querySelectorAll('.log-cat-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.log-cat-pill').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
-  renderLogEvents();
+  // no re-render needed — calendar shows all cats, pills just control upload target
 }
 const CAT_COLORS={work:'#38bdf8',bmet:'#fb923c',social:'#a78bfa'};
 const CAT_LABELS={work:'WORK / BMW',bmet:'BMet COLLEGE',social:'SOCIAL / PERSONAL'};
+
+function logCalMove(dir){
+  logCalMonth+=dir;
+  if(logCalMonth>11){logCalMonth=0;logCalYear++;}
+  if(logCalMonth<0){logCalMonth=11;logCalYear--;}
+  renderLogCalendar();
+}
+
+function renderLogCalendar(){
+  const label=new Date(logCalYear,logCalMonth,1)
+    .toLocaleDateString('en-GB',{month:'long',year:'numeric'}).toUpperCase();
+  document.getElementById('log-cal-month').textContent=label;
+
+  const today=new Date();
+  const firstDay=new Date(logCalYear,logCalMonth,1);
+  let startDow=firstDay.getDay()-1; if(startDow<0)startDow=6;
+  const daysInMonth=new Date(logCalYear,logCalMonth+1,0).getDate();
+  const daysInPrev=new Date(logCalYear,logCalMonth,0).getDate();
+
+  // Build event map from ALL categories
+  const allEvs=getAllEvents();
+  const evMap={};
+  allEvs.forEach(ev=>{
+    if(!evMap[ev.date])evMap[ev.date]=[];
+    evMap[ev.date].push(ev);
+  });
+
+  const grid=document.getElementById('log-cal-grid');
+  let html='';
+  for(let i=0;i<startDow;i++){
+    html+=`<div class="cal-cell other-month"><div class="cal-day-num">${daysInPrev-startDow+1+i}</div></div>`;
+  }
+  for(let d=1;d<=daysInMonth;d++){
+    const dateStr=`${logCalYear}-${String(logCalMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const isToday=today.getFullYear()===logCalYear&&today.getMonth()===logCalMonth&&today.getDate()===d;
+    const isSel=logCalSelected===dateStr;
+    const evs=evMap[dateStr]||[];
+    const dots=evs.slice(0,4).map(ev=>`<div class="cal-dot" style="background:${catColor(ev)}"></div>`).join('');
+    html+=`<div class="cal-cell${isToday?' today':''}${isSel?' selected':''}" onclick="logCalSelectDay('${dateStr}')">
+      <div class="cal-day-num">${d}</div>
+      <div class="cal-dots">${dots}</div>
+    </div>`;
+  }
+  const total=startDow+daysInMonth;
+  const remaining=(7-total%7)%7;
+  for(let i=1;i<=remaining;i++){
+    html+=`<div class="cal-cell other-month"><div class="cal-day-num">${i}</div></div>`;
+  }
+  grid.innerHTML=html;
+  renderLogDayEvents(logCalSelected);
+}
+
+function logCalSelectDay(dateStr){
+  logCalSelected=dateStr;
+  renderLogCalendar();
+}
+
+function renderLogDayEvents(dateStr){
+  const container=document.getElementById('log-cal-day-events');
+  const allEvs=getAllEvents();
+  const evs=allEvs.filter(ev=>ev.date===dateStr)
+    .sort((a,b)=>(a.time||'00:00').localeCompare(b.time||'00:00'));
+  const d=new Date(dateStr+'T12:00:00');
+  const label=d.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'}).toUpperCase();
+  if(!evs.length){
+    container.innerHTML=`<div class="cal-day-header">${label}</div><div class="cal-empty">// NO EVENTS</div>`;
+    return;
+  }
+  const rows=evs.map((ev,i)=>{
+    const col=catColor(ev);
+    const src=catLabel(ev);
+    const timeLabel=ev.time&&ev.time!=='23:59'?ev.time:'ALL DAY';
+    const cat=ev.cat||ev.portal||'work';
+    return`<div class="cal-event-row" style="position:relative">
+      <div class="cal-event-bar" style="background:${col}"></div>
+      <div class="cal-event-time">${timeLabel}</div>
+      <div class="cal-event-info">
+        <div class="cal-event-title">${ev.title}</div>
+        <div class="cal-event-meta" style="color:${col}">${src}${ev.platform?' · '+ev.platform:''}</div>
+      </div>
+      <button onclick="deleteLogEventByKey('${cat}','${ev.title.replace(/'/g,"\\'")}','${ev.date}','${ev.time||''}')"
+        style="background:transparent;border:none;color:var(--muted);font-size:14px;cursor:pointer;padding:4px;flex-shrink:0">✕</button>
+    </div>`;
+  }).join('');
+  container.innerHTML=`<div class="cal-day-header">${label}</div>${rows}`;
+}
+
+function deleteLogEventByKey(cat,title,date,time){
+  if(!state.portalEvents?.[cat])return;
+  state.portalEvents[cat]=state.portalEvents[cat].filter(e=>
+    !(e.title===title&&e.date===date&&(e.time||'')===(time||''))
+  );
+  save();renderLogCalendar();
+}
+
+// keep renderLogEvents as a no-op alias so old calls don't break
+function renderLogEvents(){renderLogCalendar();}
+
 
 async function handleLogCapture(e){
   const file=e.target.files[0];if(!file)return;
@@ -2723,7 +2844,7 @@ function showScreen(name){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById('screen-'+name).classList.add('active');
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.toggle('active',b.dataset.screen===name));
-  if(name==='journal'){logTab('events');renderLogEvents();}
+  if(name==='journal'){logTab('events');renderLogCalendar();}
   if(name==='pulse')initPulse();
   if(name==='markets')initMarkets();
   if(name==='settings')renderSettings();
