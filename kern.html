@@ -1015,6 +1015,27 @@ input[type=time]:focus{border-color:var(--accent)}
   </div>
 
   <div class="settings-section">
+    <div class="settings-section-title">AI Features</div>
+    <div class="settings-card">
+      <div class="settings-row" style="flex-direction:column;align-items:flex-start;gap:8px;padding:14px 16px">
+        <div class="settings-row-left">
+          <div class="settings-row-icon">🔑</div>
+          <div class="settings-row-info">
+            <div class="settings-row-label">Anthropic API Key</div>
+            <div class="settings-row-sub">Required for calendar scan, weather &amp; market signals. Get free key at console.anthropic.com</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;width:100%;margin-top:4px">
+          <input type="password" id="api-key-input" placeholder="sk-ant-..." autocomplete="off" spellcheck="false"
+            style="flex:1;background:transparent;border:none;border-bottom:1px solid var(--accent);padding:8px 0;font-family:var(--font);font-size:11px;color:var(--accent);outline:none;letter-spacing:.5px;caret-color:var(--accent)">
+          <button onclick="saveApiKey()" style="background:var(--accent-dim);border:1px solid var(--accent);color:var(--accent);font-family:var(--font);font-size:9px;font-weight:700;letter-spacing:1px;padding:6px 14px;cursor:pointer;text-transform:uppercase">SAVE</button>
+        </div>
+        <div id="api-key-status" style="font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--muted)"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="settings-section">
     <div class="settings-section-title">Account</div>
     <div class="settings-card">
       <div class="settings-row">
@@ -1866,7 +1887,7 @@ async function extractLogEvents(base64Data, cat, mimeType){
   const safeType = (mimeType && mimeType.startsWith('image/')) ? mimeType : 'image/jpeg';
   const response=await fetch('https://api.anthropic.com/v1/messages',{
     method:'POST',
-    headers:{'Content-Type':'application/json','anthropic-dangerous-direct-browser-access':'true'},
+    headers:apiHeaders(),
     body:JSON.stringify({
       model:'claude-sonnet-4-20250514',
       max_tokens:1200,
@@ -2004,7 +2025,7 @@ async function extractEvents(base64Data, portal){
     :'This is a general work schedule from Google Calendar or Outlook. Look for meetings, standups, reviews, project deadlines, and calls.';
   const response=await fetch('https://api.anthropic.com/v1/messages',{
     method:'POST',
-    headers:{'Content-Type':'application/json','anthropic-dangerous-direct-browser-access':'true'},
+    headers:apiHeaders(),
     body:JSON.stringify({
       model:'claude-sonnet-4-20250514',
       max_tokens:1000,
@@ -2384,7 +2405,7 @@ async function fetchMarketSignals(holdings){
 
   const response=await fetch('https://api.anthropic.com/v1/messages',{
     method:'POST',
-    headers:{'Content-Type':'application/json','anthropic-dangerous-direct-browser-access':'true'},
+    headers:apiHeaders(),
     body:JSON.stringify({
       model:'claude-sonnet-4-20250514',
       max_tokens:2500,
@@ -2542,7 +2563,7 @@ async function fetchDashboardData(){
   try{
     const response=await fetch('https://api.anthropic.com/v1/messages',{
       method:'POST',
-      headers:{'Content-Type':'application/json','anthropic-dangerous-direct-browser-access':'true'},
+      headers:apiHeaders(),
       body:JSON.stringify({
         model:'claude-sonnet-4-20250514',
         max_tokens:1000,
@@ -2774,6 +2795,13 @@ function sendTestNotif(){
 function renderSettings(){
   updateNotifBadge();
   document.getElementById('settings-name-display').textContent=state.userName;
+  // API key status
+  const keyEl=document.getElementById('api-key-status');
+  if(keyEl){
+    const hasKey=!!getApiKey();
+    keyEl.textContent=hasKey?'● KEY SET — AI FEATURES ACTIVE':'○ NO KEY — AI FEATURES DISABLED';
+    keyEl.style.color=hasKey?'#22c55e':'var(--danger)';
+  }
   // Sync toggle state
   const toggle=document.getElementById('global-toggle');
   if(state.reminderEnabled){
@@ -2806,6 +2834,25 @@ function toggleHabitReminder(id,el){
   } else {
     state.habitReminders[id]=false;el.classList.remove('on');save();
   }
+}
+function getApiKey(){
+  return localStorage.getItem('kern_api_key')||'';
+}
+function saveApiKey(){
+  const key=document.getElementById('api-key-input').value.trim();
+  if(!key){showToast('Enter your API key first');return;}
+  if(!key.startsWith('sk-ant-')){showToast('Key should start with sk-ant-');return;}
+  localStorage.setItem('kern_api_key',key);
+  document.getElementById('api-key-status').textContent='● KEY SAVED';
+  document.getElementById('api-key-status').style.color='#22c55e';
+  document.getElementById('api-key-input').value='';
+  showToast('API key saved ✓ — AI features enabled');
+}
+function apiHeaders(){
+  const key=getApiKey();
+  const h={'Content-Type':'application/json','anthropic-dangerous-direct-browser-access':'true'};
+  if(key)h['x-api-key']=key;
+  return h;
 }
 function refreshApp(){
   showToast('Refreshing...');
