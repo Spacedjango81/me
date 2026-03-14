@@ -2847,10 +2847,14 @@ function toggleHabitReminder(id,el){
 }
 function refreshApp(){
   showToast('Refreshing...');
-  // Unregister SW cache then reload to get latest files
   if('serviceWorker' in navigator){
-    navigator.serviceWorker.getRegistrations().then(regs=>{
-      Promise.all(regs.map(r=>r.update())).then(()=>location.reload(true));
+    navigator.serviceWorker.getRegistrations().then(regs => {
+      // Tell active SW to skip waiting, then update all registrations
+      regs.forEach(r => { if(r.active) r.active.postMessage({type:'SKIP_WAITING'}); r.update(); });
+      // Clear caches then reload
+      caches.keys().then(keys => Promise.all(keys.map(k => caches.delete(k)))).then(() => {
+        location.reload(true);
+      });
     });
   } else {
     location.reload(true);
@@ -2898,11 +2902,23 @@ let _sw = null;
 async function registerSW(){
   if(!('serviceWorker' in navigator))return;
   try{
-    const reg = await navigator.serviceWorker.register('./sw.js', {scope:'./'});
+    const reg = await navigator.serviceWorker.register('./sw.js?v=4', {scope:'./'});
     await navigator.serviceWorker.ready;
     _sw = reg;
-    console.log('KERN SW registered ✓');
-    // Re-schedule alarm if reminders are on
+    // Detect when a new SW is waiting — means new version uploaded
+    reg.addEventListener('updatefound', () => {
+      const newSW = reg.installing;
+      newSW.addEventListener('statechange', () => {
+        if(newSW.state === 'installed' && navigator.serviceWorker.controller){
+          // New version ready — reload to apply
+          newSW.postMessage({type:'SKIP_WAITING'});
+          showToast('✓ App updated — reloading...');
+          setTimeout(() => location.reload(), 1200);
+        }
+      });
+    });
+    // Check for updates in the background
+    reg.update();
     if(state.reminderEnabled && Notification.permission === 'granted'){
       swSchedule(state.reminderTime || '08:00');
     }
